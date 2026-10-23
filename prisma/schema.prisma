@@ -1,0 +1,33 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Drum {
+  id        String    @id
+  label     String
+  startedAt DateTime  @map("started_at") @db.Timestamptz(3)
+  totalDays Int       @default(14) @map("total_days")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  readings  Reading[]
+
+  @@map("drums")
+}
+
+model Reading {
+  id         Int      @id @default(autoincrement())
+  drumId     String   @map("drum_id")
+  suhu       Float
+  kelembapan Float
+  recordedAt DateTime @map("recorded_at") @db.Timestamptz(3)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  drum       Drum     @relation(fields: [drumId], references: [id], onDelete: Cascade)
+
+  @@index([drumId, recordedAt])
+  @@map("readings")
+}
