@@ -18,6 +18,7 @@ const envSchema = z.object({
   HOST: z.string().min(1).default("0.0.0.0"),
   PORT: z.coerce.number().int().min(1).max(65_535).default(8080),
   DATABASE_URL: z.url(),
+  ML_URL: z.url().default("http://127.0.0.1:8081"),
   CORS_ORIGIN: z.string().default("http://localhost:8000,http://localhost:5173"),
   APP_TZ: timeZone.default("Asia/Jakarta"),
 });

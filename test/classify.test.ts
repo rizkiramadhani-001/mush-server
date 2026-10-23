@@ -33,3 +33,9 @@ test("kelembapan di luar target dengan suhu normal", () => {
   assert.equal(result.tone, "warn");
   assert.equal(result.mlLabel, "Perlu perhatian");
 });
+
+test("kelembapan opsional saat node hanya mengirim suhu", () => {
+  assert.equal(classify(41.2).status, "dalam_target");
+  assert.equal(classify(46).tone, "bad");
+  assert.equal(classify(38).mlLabel, "Awal fermentasi");
+});

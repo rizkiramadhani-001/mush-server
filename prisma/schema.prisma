@@ -8,26 +8,90 @@ datasource db {
 }
 
 model Drum {
-  id        String    @id
-  label     String
-  startedAt DateTime  @map("started_at") @db.Timestamptz(3)
-  totalDays Int       @default(14) @map("total_days")
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
-  readings  Reading[]
+  id          Int     @id @default(autoincrement())
+  nama        String  @unique
+  kapasitasKg Int     @map("kapasitas_kg")
+  status      String  @default("aktif")
+  batches     Batch[]
 
   @@map("drums")
 }
 
-model Reading {
-  id         Int      @id @default(autoincrement())
-  drumId     String   @map("drum_id")
-  suhu       Float
-  kelembapan Float
-  recordedAt DateTime @map("recorded_at") @db.Timestamptz(3)
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  drum       Drum     @relation(fields: [drumId], references: [id], onDelete: Cascade)
+model Batch {
+  id           Int          @id @default(autoincrement())
+  drumId       Int          @map("drum_id")
+  tanggalMulai DateTime     @map("tanggal_mulai") @db.Date
+  totalHari    Int          @default(14) @map("total_hari")
+  beratKg      Decimal?     @map("berat_kg") @db.Decimal(5, 1)
+  drum         Drum         @relation(fields: [drumId], references: [id], onDelete: Cascade)
+  readings     Reading[]
+  pressEvents  PressEvent[]
+  gateEvents   GateEvent[]
+  alerts       Alert[]
+  events       Event[]
 
-  @@index([drumId, recordedAt])
+  @@index([drumId, tanggalMulai])
+  @@map("batches")
+}
+
+model Reading {
+  id         BigInt   @id @default(autoincrement())
+  batchId    Int      @map("batch_id")
+  waktu      DateTime @db.Timestamptz(3)
+  suhu       Decimal  @db.Decimal(4, 1)
+  kelembapan Int?
+  tekanan    Decimal? @db.Decimal(5, 1)
+  gas        Int?
+  label      String?
+  batch      Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId, waktu])
   @@map("readings")
+}
+
+model PressEvent {
+  id        BigInt   @id @default(autoincrement())
+  batchId   Int      @map("batch_id")
+  waktu     DateTime @db.Timestamptz(3)
+  gayaTekan Decimal  @map("gaya_tekan") @db.Decimal(6, 1)
+  batch     Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId, waktu])
+  @@map("press_events")
+}
+
+model GateEvent {
+  id      BigInt   @id @default(autoincrement())
+  batchId Int      @map("batch_id")
+  waktu   DateTime @db.Timestamptz(3)
+  tercapai Boolean
+  batch   Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId, waktu])
+  @@map("gate_events")
+}
+
+model Alert {
+  id      BigInt   @id @default(autoincrement())
+  batchId Int      @map("batch_id")
+  waktu   DateTime @db.Timestamptz(3)
+  jenis   String
+  pesan   String
+  batch   Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId, waktu])
+  @@map("alerts")
+}
+
+model Event {
+  id      BigInt   @id @default(autoincrement())
+  batchId Int      @map("batch_id")
+  waktu   DateTime @db.Timestamptz(3)
+  judul   String
+  status  String
+  tone    String
+  batch   Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId, waktu])
+  @@map("events")
 }
