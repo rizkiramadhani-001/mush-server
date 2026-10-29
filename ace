@@ -1,0 +1,5 @@
+#!/usr/bin/env node
+import { Ignitor } from '@adonisjs/core'
+
+const APP_ROOT = new URL('./', import.meta.url)
+await new Ignitor(APP_ROOT, { importer: (filePath) => import(filePath) }).ace().handle(process.argv.slice(2))

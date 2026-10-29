@@ -1,5 +1,5 @@
-import { classify } from "../src/classify.ts";
-import { prisma } from "../src/db.ts";
+import { classify } from "../app/utils/classify.ts";
+import { prisma } from "../app/services/db.ts";
 
 const HALF_HOUR_MS = 30 * 60_000;
 const DAY_MS = 86_400_000;

@@ -1,4 +1,4 @@
-import { classify } from "../classify.ts";
+import { classify } from "../utils/classify.ts";
 
 export class Reading {
   constructor(

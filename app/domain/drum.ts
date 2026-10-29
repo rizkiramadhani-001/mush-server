@@ -4,9 +4,17 @@ import { Batch } from "./batch.ts";
 export class Drum {
   constructor(private readonly data: DrumRow & { batches: BatchRow[] }) {}
 
-  get id() { return this.data.id; }
-  get nama() { return this.data.nama; }
-  get kapasitasKg() { return this.data.kapasitasKg; }
+  get id() {
+    return this.data.id;
+  }
+
+  get nama() {
+    return this.data.nama;
+  }
+
+  get kapasitasKg() {
+    return this.data.kapasitasKg;
+  }
 
   getStatus(): string {
     return this.data.status;

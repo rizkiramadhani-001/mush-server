@@ -1,6 +1,6 @@
 import type { PrismaClient, Batch as BatchRow } from "../../generated/prisma/client.ts";
-import { CONFIG } from "../config.ts";
-import { env } from "../env.ts";
+import { CONFIG } from "../utils/config.ts";
+import { env } from "../../start/env.ts";
 import type { Reading } from "./reading.ts";
 
 const dayFormat = new Intl.DateTimeFormat("en-CA", {
@@ -20,10 +20,21 @@ const dayIndex = (value: Date) => {
 export class Batch {
   constructor(private readonly data: BatchRow) {}
 
-  get id() { return this.data.id; }
-  get drumId() { return this.data.drumId; }
-  get tanggalMulai() { return this.data.tanggalMulai; }
-  get totalHari() { return this.data.totalHari; }
+  get id() {
+    return this.data.id;
+  }
+
+  get drumId() {
+    return this.data.drumId;
+  }
+
+  get tanggalMulai() {
+    return this.data.tanggalMulai;
+  }
+
+  get totalHari() {
+    return this.data.totalHari;
+  }
 
   hitungHari(now = new Date()): number {
     const elapsed = dayIndex(now) - dayIndex(this.tanggalMulai) + 1;

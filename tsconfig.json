@@ -15,6 +15,6 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/**/*.ts", "generated/**/*.ts"],
+  "include": ["app/**/*.ts", "start/**/*.ts", "bin/**/*.ts", "config/**/*.ts", "adonisrc.ts", "ace", "generated/**/*.ts"],
   "exclude": ["node_modules", "dist", "test", "prisma"]
 }

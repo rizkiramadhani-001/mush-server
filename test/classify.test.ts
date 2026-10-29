@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { classify } from "../src/classify.ts";
+import { classify } from "../app/utils/classify.ts";
 
 test("suhu dan kelembapan dalam target", () => {
   const result = classify(41.2, 62);

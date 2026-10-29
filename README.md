@@ -1,6 +1,6 @@
 # MUSH Server
 
-Backend REST untuk dashboard MUSH (Pagi Farm): Fastify + TypeScript,
+Backend REST untuk dashboard MUSH (Pagi Farm): AdonisJS + TypeScript,
 Prisma 7, dan PostgreSQL. Mengikuti `mush-dashboard/api-contract.json` v3.1
 dan ERD `dokumen/diagram/ERD_MUSH.drawio`. Inferensi prediksi dikerjakan
 layanan terpisah `../mush-ml`.
@@ -65,7 +65,7 @@ npm start
 |---|---|---|
 | `DATABASE_URL` | wajib | Connection string PostgreSQL |
 | `ML_URL` | `http://127.0.0.1:8081` | Base URL layanan `mush-ml` |
-| `HOST` | `0.0.0.0` | Alamat bind Fastify |
+| `HOST` | `0.0.0.0` | Alamat bind AdonisJS |
 | `PORT` | `8080` | Port HTTP |
 | `CORS_ORIGIN` | `http://localhost:8000,http://localhost:5173` | Daftar origin dipisah koma, atau `*` |
 | `APP_TZ` | `Asia/Jakarta` | Zona waktu label jam, hari fermentasi, dan bucket histori |
@@ -197,12 +197,15 @@ bentuk data contoh. Sebelum `USE_MOCK:false`:
 ## Struktur
 
 ```
-src/config.ts     ambang, jumlah log, rentang histori
-src/classify.ts   aturan status + label deterministik
-src/env.ts        validasi environment
-src/db.ts         PrismaClient + driver adapter pg
-src/app.ts        route dan serialisasi response
-src/server.ts     listen + graceful shutdown
+app/utils/config.ts       ambang, jumlah log, rentang histori
+app/utils/classify.ts     aturan status + label deterministik
+start/env.ts              validasi environment
+app/services/db.ts        PrismaClient + driver adapter pg
+app/services/server_api.ts service API dan serialisasi response
+app/controllers/          controller HTTP AdonisJS
+app/domain/               class Drum, Batch, Reading, PressEvent sesuai UML
+start/routes.ts   definisi route AdonisJS
+bin/server.ts     entry point HTTP AdonisJS
 prisma/           schema, migrasi awal, seed
 ```
 
