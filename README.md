@@ -1,5 +1,20 @@
 # MUSH Server
 
+Backend API for a sensor-to-dashboard system that monitors fermentation batches.
+
+**Stack:** AdonisJS, TypeScript, Prisma, PostgreSQL
+
+This service receives sensor readings, stores drum and batch data, exposes dashboard endpoints, and connects to the separate MUSH ML service for predictions.
+
+## Portfolio snapshot
+
+- REST API design for readings, batches, alerts, and events
+- Relational data modeling with Prisma and PostgreSQL
+- Integration boundary between the API and the ML service
+- Type checking and automated tests
+
+**Related repositories:** [MUSH ML](https://github.com/rizkiramadhani-001/mush-ml) · [MUSH React](https://github.com/rizkiramadhani-001/mush-react) · [MUSH landing page](https://github.com/rizkiramadhani-001/landing)
+
 Backend REST untuk dashboard MUSH (Pagi Farm): AdonisJS + TypeScript,
 Prisma 7, dan PostgreSQL. Mengikuti `mush-dashboard/api-contract.json` v3.1
 dan ERD `dokumen/diagram/ERD_MUSH.drawio`. Inferensi prediksi dikerjakan
