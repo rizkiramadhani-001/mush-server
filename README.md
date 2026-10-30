@@ -139,7 +139,12 @@ Dipakai gateway ESP32. `t` opsional; jika kosong dipakai waktu server.
 ```
 
 `kelembapan` harus bilangan bulat 0–100; `gas` bilangan bulat ≥ 0; `suhu` dan
-`tekanan` bilangan finite. Drum harus terdaftar dan punya batch aktif.
+`tekanan` bilangan finite.
+
+Drum yang belum terdaftar dibuat otomatis saat bacaan pertama masuk: drum baru
+memakai `kapasitas_kg` 50 dan `status` `aktif`, lalu dibuat batch aktif 14 hari
+dengan `tanggal_mulai` mengikuti waktu bacaan. Drum yang sudah punya batch aktif
+memakai batch tersebut.
 
 ### `POST /api/press-events`
 
@@ -151,7 +156,8 @@ Dipakai gateway ESP32. `t` opsional; jika kosong dipakai waktu server.
 { "ok": true, "batch_id": 1, "gaya_tekan": 812.4 }
 ```
 
-`gaya_tekan` dalam newton (N), sesuai subbab load cell laporan.
+`gaya_tekan` dalam newton (N), sesuai subbab load cell laporan. Event untuk
+drum baru juga membuat drum dan batch aktif secara otomatis.
 
 ### `GET /api/latest?drum=B-024`
 
@@ -232,7 +238,7 @@ prediksi bernilai `null`.
 | Status | Kondisi |
 |---|---|
 | `400` | Query wajib tidak ada atau payload tidak lolos validasi |
-| `404` | Drum tidak dikenal atau belum punya batch aktif |
+| `404` | Drum tidak dikenal atau belum punya batch aktif pada `GET /api/latest` dan `GET /api/predict` |
 | `503` | Database mati (`/health`) atau layanan ML tidak tersedia |
 
 Payload tidak valid menyertakan detail:

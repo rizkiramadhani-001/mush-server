@@ -144,12 +144,12 @@ export class ServerAPI {
   }
 
   async createReading(input: ReadingInput): Promise<ApiResult> {
-    const context = await this.getBatchContext(input.drum_id);
-    if (context.error) return context.error;
+    const at = input.t ? new Date(input.t) : new Date();
+    const context = await this.ensureBatchContext(input.drum_id, at);
 
     const reading = new Reading(
       context.batch.id,
-      input.t ? new Date(input.t) : new Date(),
+      at,
       input.suhu,
       input.kelembapan,
       input.tekanan,
@@ -170,12 +170,12 @@ export class ServerAPI {
   }
 
   async createPressEvent(input: PressInput): Promise<ApiResult> {
-    const context = await this.getBatchContext(input.drum_id);
-    if (context.error) return context.error;
+    const at = input.t ? new Date(input.t) : new Date();
+    const context = await this.ensureBatchContext(input.drum_id, at);
 
     const event = new PressEvent(
       context.batch.id,
-      input.t ? new Date(input.t) : new Date(),
+      at,
       input.gaya_tekan,
     );
 
@@ -195,6 +195,36 @@ export class ServerAPI {
         gaya_tekan: input.gaya_tekan,
       },
     };
+  }
+
+  /* Gateway boleh mengirim drum baru tanpa registrasi manual: drum dan batch
+     aktifnya dibuat saat bacaan pertama masuk. Batch yang sudah ada dipakai
+     ulang, jadi pembacaan berikutnya tidak membuat batch baru. */
+  private async ensureBatchContext(drumId: string, at: Date) {
+    const drum = await this.db.drum.upsert({
+      where: { nama: drumId },
+      update: {},
+      create: {
+        nama: drumId,
+        kapasitasKg: CONFIG.DEFAULT_KAPASITAS_KG,
+        status: "aktif",
+      },
+      include: {
+        batches: { orderBy: [{ tanggalMulai: "desc" }, { id: "desc" }] },
+      },
+    });
+
+    const batchRow =
+      drum.batches[0] ??
+      (await this.db.batch.create({
+        data: {
+          drumId: drum.id,
+          tanggalMulai: at,
+          totalHari: CONFIG.DEFAULT_TOTAL_HARI,
+        },
+      }));
+
+    return { drum, batch: new Batch(batchRow) };
   }
 
   private async getBatchContext(drumId: string) {
