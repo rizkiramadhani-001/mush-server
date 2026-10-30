@@ -79,11 +79,20 @@ npm start
 | Variabel | Default | Keterangan |
 |---|---|---|
 | `DATABASE_URL` | wajib | Connection string PostgreSQL |
+| `APP_KEY` | wajib | Kunci enkripsi AdonisJS, minimal 16 karakter |
 | `ML_URL` | `http://127.0.0.1:8081` | Base URL layanan `mush-ml` |
 | `HOST` | `0.0.0.0` | Alamat bind AdonisJS |
 | `PORT` | `8080` | Port HTTP |
 | `CORS_ORIGIN` | `http://localhost:8000,http://localhost:5173` | Daftar origin dipisah koma, atau `*` |
 | `APP_TZ` | `Asia/Jakarta` | Zona waktu label jam, hari fermentasi, dan bucket histori |
+
+## Body parser
+
+Request JSON ditangani `@adonisjs/core/bodyparser_middleware`. Middleware
+didaftarkan di `start/kernel.ts`, dan modul kernel di-preload dari `adonisrc.ts`
+sebelum route. Konfigurasi default ada di `config/bodyparser.ts`. Tanpa ketiganya
+`request.body()` bernilai `{}` dan `POST /api/readings` mengembalikan
+`400 Payload tidak valid`.
 
 ## Endpoint
 
@@ -133,12 +142,14 @@ Mencatat gaya tekan load cell screw press ke batch aktif.
 
 Mengembalikan snapshot terbaru sesuai kontrak: `suhu`, `kelembapan`, `hari`,
 `total_hari`, `progres_pct`, `status`, `ml_label`, `sinkron`, `sumber`, `log`,
-`h24`, dan `h7`, ditambah `tekanan` dan `gas`.
+`h24`, dan `h7`, ditambah `tekanan`, `gas`, `berat`, dan `started`.
 
 - `log`: 8 pembacaan terakhir, terbaru di atas.
 - `h24`: rata-rata suhu per jam, maksimal 24 bucket terakhir.
 - `h7`: rata-rata suhu per hari, maksimal 7 bucket terakhir.
 - `hari`: dihitung dari `batches.tanggal_mulai`, dibatasi `1..total_hari`.
+- `berat`: `batches.berat_kg`, `null` bila paket belum ditimbang.
+- `started`: tanggal mulai batch, format `YYYY-MM-DD`.
 
 ### `GET /api/predict?drum=B-024`
 
@@ -198,16 +209,23 @@ ambang, **bukan** keluaran Random Forest / Isolation Forest.
 - Endpoint `alerts`/`events`/`gate_events`; tabelnya sudah ada sesuai ERD.
 - Model Random Forest / Isolation Forest; `mush-ml` masih regresi linear.
 
-## Catatan integrasi `mush-react`
+## Integrasi `mush-react`
 
-Backend ini mengikuti kontrak v3.1, sedangkan adapter React masih mengharapkan
-bentuk data contoh. Sebelum `USE_MOCK:false`:
+Dashboard React memakai server ini secara default (`USE_MOCK: false`).
 
-1. `Api.getDrums()` harus memetakan `{ drums: [{ id }] }` menjadi daftar
-   snapshot, atau backend menambah endpoint snapshot.
-2. `selectDrum()` di `App.jsx` masih membatasi pilihan ke `SEED[id]`.
-3. View React memakai field di luar kontrak: `label`, `started`, `berat`,
-   `kapasitas_kg`, `machine_sensors`, dan `sensor_history`.
+- `src/api.js` memetakan `{ drums: [{ id }] }` + `/api/latest` menjadi snapshot
+  yang dipakai view.
+- `selectDrum()` membaca daftar drum dari server, bukan `SEED`.
+- `sensor_history` dibangun dari `log`; `machine_sensors` belum dikirim server
+  dan ditampilkan sebagai "Belum ada data".
+- Vite meneruskan `/api` dan `/health` ke `127.0.0.1:8080`.
+
+Jalankan API lebih dulu, lalu dashboard:
+
+```bash
+cd mush-server && npm run dev     # http://localhost:8080
+cd mush-react && npm run dev      # http://localhost:5173
+```
 
 ## Struktur
 
@@ -215,6 +233,8 @@ bentuk data contoh. Sebelum `USE_MOCK:false`:
 app/utils/config.ts       ambang, jumlah log, rentang histori
 app/utils/classify.ts     aturan status + label deterministik
 start/env.ts              validasi environment
+start/kernel.ts           registrasi middleware server (body parser, CORS)
+config/bodyparser.ts      konfigurasi body parser JSON/form/multipart
 app/services/db.ts        PrismaClient + driver adapter pg
 app/services/server_api.ts service API dan serialisasi response
 app/controllers/          controller HTTP AdonisJS
