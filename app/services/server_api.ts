@@ -96,6 +96,8 @@ export class ServerAPI {
         hari: batch.hitungHari(now),
         total_hari: batch.totalHari,
         progres_pct: batch.hitungProgres(now),
+        berat: batch.beratKg,
+        started: batch.tanggalMulai.toISOString().slice(0, 10),
         status: classification.status,
         ml_label: classification.mlLabel,
         sinkron: formatTime(latest.waktu),

@@ -36,6 +36,10 @@ export class Batch {
     return this.data.totalHari;
   }
 
+  get beratKg() {
+    return this.data.beratKg == null ? null : Number(this.data.beratKg);
+  }
+
   hitungHari(now = new Date()): number {
     const elapsed = dayIndex(now) - dayIndex(this.tanggalMulai) + 1;
     return Math.min(this.totalHari, Math.max(1, elapsed));
