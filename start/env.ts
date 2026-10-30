@@ -15,6 +15,7 @@ const timeZone = z.string().refine(
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  APP_KEY: z.string().min(16),
   HOST: z.string().min(1).default("0.0.0.0"),
   PORT: z.coerce.number().int().min(1).max(65_535).default(8080),
   DATABASE_URL: z.url(),

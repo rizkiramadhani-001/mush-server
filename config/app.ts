@@ -1,6 +1,7 @@
 import { defineConfig as defineHttpConfig } from "@adonisjs/core/http";
+import { env } from "../start/env.ts";
 
 export default {
-  appKey: process.env.APP_KEY,
+  appKey: env.APP_KEY,
   http: defineHttpConfig({}),
 };
