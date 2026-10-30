@@ -1,28 +1,26 @@
 # MUSH Server
 
-REST API untuk pemantauan fermentasi silase Pagi Farm. Menerima bacaan sensor
-dari gateway ESP32, menyimpannya ke PostgreSQL, dan menyajikan snapshot terbaru
-untuk dashboard.
+> REST API untuk sistem pemantauan fermentasi silase Pagi Farm. Menerima bacaan
+> sensor dari gateway ESP32, menyimpannya di PostgreSQL, dan menyajikan data
+> untuk dashboard serta layanan prediksi.
 
-**Stack:** AdonisJS 6 · TypeScript · Prisma 7 · PostgreSQL 16+ · Zod
+![AdonisJS](https://img.shields.io/badge/AdonisJS-6-5A45FF?logo=adonisjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-7-2D3748?logo=prisma&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-4169E1?logo=postgresql&logoColor=white)
 
-## Ringkasan
+## Konteks
 
-- Ingest bacaan suhu, kelembapan, tekanan, dan gas per drum.
-- Pencatatan event gaya tekan dari load cell screw press.
-- Snapshot dashboard: bacaan terbaru, log 8 titik, rata-rata per jam (24 jam),
-  dan rata-rata per hari (7 hari).
-- Klasifikasi ambang deterministik untuk status dan `ml_label`.
-- Delegasi prediksi ke layanan terpisah [`mush-ml`](https://github.com/rizkiramadhani-001/mush-ml).
-- Validasi environment dan payload dengan Zod.
-
-## Alur sistem
+Sistem MUSH memantau drum fermentasi silase secara berkelanjutan. Sensor suhu,
+kelembapan, tekanan, dan gas dikirim gateway ke API ini; dashboard membaca
+snapshot terbaru setiap 10 detik. Server juga menjadi jembatan ke layanan ML
+untuk prediksi 1 dan 7 hari.
 
 ```
 DS18B20 / MQ-135 / sensor tekanan
         │
         ▼
-   LGT8F32P → RF433 → ESP32 → router 4G
+LGT8F32P → RF433 → ESP32 → router 4G
         │
         ▼
 POST /api/readings ──► mush-server ──► PostgreSQL
@@ -31,8 +29,61 @@ POST /api/readings ──► mush-server ──► PostgreSQL
                             └── POST /predict    ──► mush-ml
 ```
 
-Server ini tidak menjalankan inferensi sendiri. Model per batch dilatih di
-`mush-ml`, lalu dipanggil lewat HTTP.
+Repo terkait:
+
+- [MUSH React](https://github.com/rizkiramadhani-001/mush-react) — dashboard Ionic React
+- [MUSH ML](https://github.com/rizkiramadhani-001/mush-ml) — layanan prediksi FastAPI
+- [Landing page](https://github.com/rizkiramadhani-001/landing)
+
+## Yang ditonjolkan
+
+- **Desain REST yang konsisten** mengikuti kontrak dashboard v3.1.
+- **Model data relasional** untuk drum, batch, bacaan, event pres, dan gate.
+- **Auto-provisioning drum.** Gateway dapat mengirim `drum_id` baru tanpa
+  registrasi manual; drum dan batch aktif dibuat saat bacaan pertama.
+- **Validasi berlapis.** Environment divalidasi saat boot, payload dengan Zod,
+  dan error dikembalikan dalam bentuk yang konsisten.
+- **Batas integrasi yang jelas.** Inferensi dipisah ke `mush-ml`; API tetap
+  hidup walau layanan ML mati (`503`, bukan crash).
+- **Body parser eksplisit.** Kernel dan middleware didaftarkan, bukan mengandalkan
+  default framework.
+
+## Fitur
+
+- Ingest bacaan suhu, kelembapan, tekanan, dan gas per drum.
+- Pencatatan event gaya tekan dari load cell screw press.
+- Snapshot dashboard: bacaan terbaru, 8 log terakhir, rata-rata per jam (24 jam),
+  dan rata-rata per hari (7 hari).
+- Klasifikasi ambang deterministik untuk status dan `ml_label`.
+- Delegasi prediksi ke layanan ML per batch.
+- Seed data demo: dua drum, batch aktif, riwayat bacaan, dan event pres.
+
+## Model data
+
+```
+drums (id, nama, kapasitas_kg, status)
+  └─ batches (id, drum_id, tanggal_mulai, total_hari, berat_kg)
+       ├─ readings (waktu, suhu, kelembapan, tekanan, gas, label)
+       ├─ press_events (waktu, gaya_tekan)
+       ├─ gate_events (waktu, tercapai)
+       ├─ alerts (waktu, jenis, pesan)
+       └─ events (waktu, judul, status, tone)
+```
+
+API memakai `drum_id` (`B-024`) seperti kontrak; nilainya dipetakan ke
+`drums.nama`. Batch aktif = batch dengan `tanggal_mulai` terbaru pada drum itu.
+
+## Tech stack
+
+| Bagian | Teknologi |
+|---|---|
+| Framework | AdonisJS 6 |
+| Bahasa | TypeScript 5 |
+| ORM | Prisma 7 + driver adapter `pg` |
+| Database | PostgreSQL 16+ |
+| Validasi | Zod 4 |
+| Testing | `tsx --test` |
+| Build | AdonisJS assembler |
 
 ## Menjalankan
 
@@ -58,8 +109,8 @@ npx prisma dev -d
 npm run db:deploy && npm run db:seed
 ```
 
-Seed membuat dua drum (`B-024`, `B-025`), batch aktif, riwayat bacaan, dan
-event tekan. Batch aktif adalah batch dengan `tanggal_mulai` terbaru per drum.
+Seed membuat dua drum (`B-024`, `B-025`), batch aktif, riwayat bacaan, dan event
+tekan. Seed idempotent: drum yang sudah punya bacaan dilewati.
 
 Produksi:
 
@@ -156,8 +207,8 @@ memakai batch tersebut.
 { "ok": true, "batch_id": 1, "gaya_tekan": 812.4 }
 ```
 
-`gaya_tekan` dalam newton (N), sesuai subbab load cell laporan. Event untuk
-drum baru juga membuat drum dan batch aktif secara otomatis.
+`gaya_tekan` dalam newton (N), sesuai subbab load cell laporan. Event untuk drum
+baru juga membuat drum dan batch aktif secara otomatis.
 
 ### `GET /api/latest?drum=B-024`
 
@@ -193,7 +244,7 @@ drum baru juga membuat drum dan batch aktif secara otomatis.
 ### `GET /api/predict?drum=B-024`
 
 Mendelegasikan ke `POST /predict` milik `mush-ml` dengan `batch_id` dan waktu
-server. Model harus sudah dilatih untuk batch tersebut (lihat README `mush-ml`).
+server. Model harus sudah dilatih untuk batch tersebut.
 
 ```json
 {
@@ -241,8 +292,6 @@ prediksi bernilai `null`.
 | `404` | Drum tidak dikenal atau belum punya batch aktif pada `GET /api/latest` dan `GET /api/predict` |
 | `503` | Database mati (`/health`) atau layanan ML tidak tersedia |
 
-Payload tidak valid menyertakan detail:
-
 ```json
 {
   "error": "Payload tidak valid",
@@ -272,11 +321,8 @@ Dashboard React memakai server ini secara default (`USE_MOCK: false`).
 - `src/api.js` memetakan `{ drums: [{ id }] }` + `/api/latest` menjadi snapshot
   yang dipakai view.
 - `selectDrum()` membaca daftar drum dari server, bukan data contoh.
-- `sensor_history` dibangun dari `log`; `machine_sensors` belum dikirim server
-  dan ditampilkan sebagai "Belum ada data".
+- `sensor_history` dibangun dari `log`; `machine_sensors` belum dikirim server.
 - Vite meneruskan `/api` dan `/health` ke `127.0.0.1:8080`.
-
-Jalankan API lebih dulu, lalu dashboard:
 
 ```bash
 cd mush-server && npm run dev     # http://localhost:8080
@@ -313,16 +359,16 @@ npm test
 Tes mencakup batas target, suhu di atas/bawah target, kelembapan di luar target,
 dan node yang hanya mengirim suhu.
 
-## Batasan
+## Batasan dan rencana
 
 - Belum ada ingest MQTT atau push WebSocket; komunikasi masih HTTP.
 - Endpoint `alerts`, `events`, dan `gate_events` belum dibuat, tabelnya sudah ada.
 - Belum ada autentikasi; batasi akses lewat reverse proxy atau jaringan privat.
-- Model Random Forest / Isolation Forest belum ada; prediksi masih regresi linear.
+- Prediksi masih regresi linear; Random Forest / Isolation Forest belum ada.
 - `machine_sensors` belum menjadi bagian response server.
+- Berikutnya: endpoint alert, auth token untuk gateway, dan observability.
 
-## Repo terkait
+## Status
 
-- [MUSH React](https://github.com/rizkiramadhani-001/mush-react) — dashboard Ionic React
-- [MUSH ML](https://github.com/rizkiramadhani-001/mush-ml) — layanan prediksi FastAPI
-- [Landing page](https://github.com/rizkiramadhani-001/landing)
+Prototipe fungsional untuk kolaborasi Pagi Farm. API sudah mengikuti kontrak
+dashboard v3.1 dan diuji dengan seed data dua drum.
